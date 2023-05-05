@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Selection and Dominant Color</title>
+</head>
+<body>
+  <input type="file" id="imageInput" accept="image/*">
+  <img id="preview" style="max-width: 300px; max-height: 300px;">
+
+  <script>
+    function getDominantColor(img) {
+      const width = img.width;
+      const height = img.height;
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      canvas.width = width;
+      canvas.height = height;
+
+      context.drawImage(img, 0, 0, width, height);
+      const imageData = context.getImageData(0, 0, width, height).data;
+
+      const colorCount = {};
+
+      for (let i = 0; i < imageData.length; i += 4) {
+        const r = imageData[i];
+        const g = imageData[i + 1];
+        const b = imageData[i + 2];
+
+        const color = (r << 16) | (g << 8) | b;
+        colorCount[color] = (colorCount[color] || 0) + 1;
+      }
+
+      let dominantColor = null;
+      let maxCount = 0;
+
+      for (const color in colorCount) {
+        if (colorCount[color] > maxCount) {
+          maxCount = colorCount[color];
+          dominantColor = color;
+        }
+      }
+
+      const r = (dominantColor >> 16) & 0xFF;
+      const g = (dominantColor >> 8) & 0xFF;
+      const b = dominantColor & 0xFF;
+
+      return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+    }
+
+    const imageInput = document.getElementById('imageInput');
+    const preview = document.getElementById('preview');
+
+    imageInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          preview.src = e.target.result;
+          preview.onload = () => {
+            const dominantColor = getDominantColor(preview);
+            console.log('Dominant color:', dominantColor);
+          };
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.src = '';
+      }
+    });
+  </script>
+</body>
+</html>
